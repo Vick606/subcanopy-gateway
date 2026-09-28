@@ -7,6 +7,8 @@ authors = [
     { name = "Victor", email = "vickoch20@gmail.com" }
 ]
 requires-python = ">=3.14.7"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
