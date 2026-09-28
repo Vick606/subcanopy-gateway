@@ -9,7 +9,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.dependencies import get_scanner_service
-from app.schemas import ScanRequest, ScanResponse
+from app.schemas import (
+    BatchScanRequest,
+    BatchScanResponse,
+    ScanRequest,
+    ScanResponse,
+)
 from app.services.scanner import ScannerService
 
 router = APIRouter(tags=["scan"])
@@ -21,3 +26,11 @@ async def scan(
     service: Annotated[ScannerService, Depends(get_scanner_service)],
 ) -> ScanResponse:
     return service.scan(request.text, source=request.source)
+
+
+@router.post("/scan/batch")
+async def scan_batch(
+    request: BatchScanRequest,
+    service: Annotated[ScannerService, Depends(get_scanner_service)],
+) -> BatchScanResponse:
+    return service.scan_batch(request.texts, source=request.source)
