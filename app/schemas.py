@@ -5,9 +5,21 @@
 # COMMERCIAL_LICENSE.md at the repository root.
 
 from enum import StrEnum
+from typing import Annotated
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import AfterValidator, BaseModel, Field, computed_field
 from subcanopy_guard.provenance import known_sources
+
+
+def _check_source(value: str) -> str:
+    allowed = known_sources()
+    if value not in allowed:
+        raise ValueError(f"source must be one of {allowed}")
+    return value
+
+
+TextContent = Annotated[str, Field(min_length=1, max_length=100_000)]
+SourceTag = Annotated[str, AfterValidator(_check_source)]
 
 
 class Severity(StrEnum):
@@ -19,18 +31,8 @@ class Severity(StrEnum):
 
 
 class ScanRequest(BaseModel):
-    text: str = Field(min_length=1, max_length=100_000)
-    source: str | None = None
-
-    @field_validator("source")
-    @classmethod
-    def _validate_source(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        allowed = known_sources()
-        if value not in allowed:
-            raise ValueError(f"source must be one of {allowed}")
-        return value
+    text: TextContent
+    source: SourceTag | None = None
 
 
 class SignalBreakdown(BaseModel):
@@ -47,3 +49,17 @@ class ScanResponse(BaseModel):
     matches: list[str]
     hotspots: list[tuple[int, int]]
     signals: SignalBreakdown
+
+
+class BatchScanRequest(BaseModel):
+    texts: list[TextContent] = Field(min_length=1, max_length=100)
+    source: SourceTag | None = None
+
+
+class BatchScanResponse(BaseModel):
+    results: list[ScanResponse]
+
+    @computed_field
+    @property
+    def count(self) -> int:
+        return len(self.results)

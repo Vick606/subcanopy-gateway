@@ -6,7 +6,12 @@
 
 from subcanopy_guard import ContextScanner, ScanResult
 
-from app.schemas import ScanResponse, Severity, SignalBreakdown
+from app.schemas import (
+    BatchScanResponse,
+    ScanResponse,
+    Severity,
+    SignalBreakdown,
+)
 
 
 class ScannerService:
@@ -15,6 +20,17 @@ class ScannerService:
 
     def scan(self, text: str, source: str | None = None) -> ScanResponse:
         return to_response(self._scanner.scan(text, source=source))
+
+    def scan_batch(
+        self, texts: list[str], source: str | None = None
+    ) -> BatchScanResponse:
+        """Scan multiple texts, results in input order.
+
+        Client can zip texts and results positionally to attribute each
+        result to its input.
+        """
+        results = [self.scan(text, source=source) for text in texts]
+        return BatchScanResponse(results=results)
 
 
 def to_response(result: ScanResult) -> ScanResponse:
