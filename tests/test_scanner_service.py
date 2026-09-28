@@ -4,11 +4,13 @@
 # This file is part of subcanopy-gateway. See LICENSE and
 # COMMERCIAL_LICENSE.md at the repository root.
 
+from collections.abc import Callable
+
 import pytest
 from subcanopy_guard import ScanResult
 
 from app.schemas import Severity
-from app.services.scanner import to_response
+from app.services.scanner import ScannerService, to_response
 
 
 def _result(severity: str = "HIGH", risk: float = 0.8) -> ScanResult:
@@ -48,3 +50,47 @@ def test_to_response_low_severity_is_not_blocking() -> None:
 def test_to_response_rejects_unknown_severity() -> None:
     with pytest.raises(ValueError):
         to_response(_result(severity="BOGUS"))
+
+
+class _MappingScanner:
+    """Stub scanner that derives a result from the input text."""
+
+    def __init__(self, mapper: Callable[[str], ScanResult]) -> None:
+        self._mapper = mapper
+        self.calls: list[tuple[str, str | None]] = []
+
+    def scan(self, text: str, source: str | None = None) -> ScanResult:
+        self.calls.append((text, source))
+        return self._mapper(text)
+
+
+def test_scan_batch_returns_results_in_input_order() -> None:
+    severities = {"a": "CLEAN", "b": "HIGH", "c": "LOW"}
+
+    def mapper(text: str) -> ScanResult:
+        return _result(severity=severities[text], risk=0.5)
+
+    service = ScannerService(_MappingScanner(mapper))  # type: ignore[arg-type]
+    batch = service.scan_batch(["a", "b", "c"])
+
+    assert batch.count == 3
+    assert [r.severity.value for r in batch.results] == ["CLEAN", "HIGH", "LOW"]
+    assert [r.risk for r in batch.results] == [0.5, 0.5, 0.5]
+
+
+def test_scan_batch_passes_source_to_each_item() -> None:
+    stub = _MappingScanner(lambda _: _result())
+    service = ScannerService(stub)  # type: ignore[arg-type]
+
+    service.scan_batch(["a", "b"], source="tool_output")
+
+    assert stub.calls == [("a", "tool_output"), ("b", "tool_output")]
+
+
+def test_scan_batch_empty_list_returns_empty_response() -> None:
+    service = ScannerService(_MappingScanner(lambda _: _result()))  # type: ignore[arg-type]
+
+    batch = service.scan_batch([])
+
+    assert batch.count == 0
+    assert batch.results == []
