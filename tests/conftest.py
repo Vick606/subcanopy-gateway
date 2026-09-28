@@ -7,6 +7,7 @@
 from collections.abc import Iterator
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.config import Settings
@@ -19,7 +20,11 @@ def settings() -> Settings:
 
 
 @pytest.fixture
-def client(settings: Settings) -> Iterator[TestClient]:
-    app = create_app(settings=settings)
+def app(settings: Settings) -> FastAPI:
+    return create_app(settings=settings)
+
+
+@pytest.fixture
+def client(app: FastAPI) -> Iterator[TestClient]:
     with TestClient(app) as c:
         yield c
