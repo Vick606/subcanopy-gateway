@@ -7,6 +7,7 @@
 from fastapi import FastAPI
 
 from app.config import Settings, get_settings
+from app.routers.scan import router as scan_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -25,5 +26,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/version")
     async def version() -> dict[str, str]:
         return {"app": settings.app_name, "version": settings.version}
+
+    app.include_router(scan_router)
 
     return app
