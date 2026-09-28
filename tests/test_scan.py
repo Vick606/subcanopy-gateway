@@ -113,3 +113,58 @@ def test_scan_critical_severity_still_returns_200(
     assert response.status_code == 200
     assert response.json()["severity"] == "CRITICAL"
     assert response.json()["blocking"] is True
+
+
+def test_batch_scan_returns_200_with_results(
+    client: TestClient, override_scanner: _StubScanner
+) -> None:
+    response = client.post("/scan/batch", json={"texts": ["a", "b", "c"]})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["count"] == 3
+    assert len(body["results"]) == 3
+    assert all(r["severity"] == "HIGH" for r in body["results"])
+
+
+def test_batch_scan_passes_source_to_each_item(
+    client: TestClient, override_scanner: _StubScanner
+) -> None:
+    client.post(
+        "/scan/batch",
+        json={"texts": ["a", "b"], "source": "tool_output"},
+    )
+
+    assert override_scanner.calls == [
+        ("a", "tool_output"),
+        ("b", "tool_output"),
+    ]
+
+
+def test_batch_scan_omitted_source_passes_none(
+    client: TestClient, override_scanner: _StubScanner
+) -> None:
+    client.post("/scan/batch", json={"texts": ["a"]})
+
+    assert override_scanner.calls == [("a", None)]
+
+
+def test_batch_scan_empty_list_returns_422(client: TestClient) -> None:
+    response = client.post("/scan/batch", json={"texts": []})
+
+    assert response.status_code == 422
+
+
+def test_batch_scan_over_100_items_returns_422(client: TestClient) -> None:
+    response = client.post("/scan/batch", json={"texts": ["a"] * 101})
+
+    assert response.status_code == 422
+
+
+def test_batch_scan_unknown_source_returns_422(client: TestClient) -> None:
+    response = client.post(
+        "/scan/batch",
+        json={"texts": ["a"], "source": "bogus"},
+    )
+
+    assert response.status_code == 422
