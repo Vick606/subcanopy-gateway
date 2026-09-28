@@ -22,4 +22,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    @app.get("/version")
+    async def version() -> dict[str, str]:
+        return {"app": settings.app_name, "version": settings.version}
+
     return app
