@@ -27,3 +27,18 @@ Thumbs.db
 # Project artifacts
 *.db
 *.sqlite3
+
+# Build artifacts
+dist/
+build/
+*.egg
+
+# Logs
+*.log
+logs/
+
+# Docker
+docker-compose.override.yml
+
+# Coverage
+coverage.xml
