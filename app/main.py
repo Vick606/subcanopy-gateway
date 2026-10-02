@@ -4,20 +4,34 @@
 # This file is part of subcanopy-gateway. See LICENSE and
 # COMMERCIAL_LICENSE.md at the repository root.
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from app.config import Settings, get_settings
+from app.database import create_engine, create_session_factory
 from app.routers.scan import router as scan_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
 
+    engine = create_engine(settings)
+    session_factory = create_session_factory(engine)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        yield
+        await engine.dispose()
+
     app = FastAPI(
         title=settings.app_name,
         version=settings.version,
         debug=settings.debug,
+        lifespan=lifespan,
     )
+    app.state.engine = engine
+    app.state.session_factory = session_factory
 
     @app.get("/health")
     async def health() -> dict[str, str]:
