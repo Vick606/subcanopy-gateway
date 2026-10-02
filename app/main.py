@@ -10,6 +10,7 @@ from fastapi import FastAPI
 
 from app.config import Settings, get_settings
 from app.database import create_engine, create_session_factory
+from app.routers.history import router as history_router
 from app.routers.scan import router as scan_router
 
 
@@ -42,5 +43,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"app": settings.app_name, "version": settings.version}
 
     app.include_router(scan_router)
+    app.include_router(history_router)
 
     return app
