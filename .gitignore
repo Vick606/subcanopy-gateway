@@ -9,12 +9,25 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .coverage
+coverage.xml
 htmlcov/
+
+# Build artifacts
+dist/
+build/
+*.egg
+
+# Logs
+*.log
+logs/
 
 # Environment files
 .env
 .env.*
 !.env.example
+
+# Docker
+docker-compose.override.yml
 
 # IDE
 .vscode/
@@ -27,18 +40,3 @@ Thumbs.db
 # Project artifacts
 *.db
 *.sqlite3
-
-# Build artifacts
-dist/
-build/
-*.egg
-
-# Logs
-*.log
-logs/
-
-# Docker
-docker-compose.override.yml
-
-# Coverage
-coverage.xml
