@@ -9,7 +9,12 @@ import hashlib
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.scan import ScanRecord
-from app.schemas import ScanResponse
+from app.schemas import (
+    ScanRecordResponse,
+    ScanResponse,
+    Severity,
+    SignalBreakdown,
+)
 
 PREVIEW_LENGTH = 200
 
@@ -48,3 +53,25 @@ async def save_scan(
     session.add(record)
     await session.commit()
     return record
+
+
+def record_to_response(record: ScanRecord) -> ScanRecordResponse:
+    """Map a ScanRecord row to the API response shape."""
+    signals = record.signals
+    return ScanRecordResponse(
+        id=record.id,
+        text_hash=record.text_hash,
+        text_preview=record.text_preview,
+        source=record.source,
+        severity=Severity(record.severity),
+        risk=record.risk,
+        blocking=record.blocking,
+        matches=signals.get("matches", []),
+        hotspots=signals.get("hotspots", []),
+        signals=SignalBreakdown(
+            density_risk=signals["density_risk"],
+            discontinuity_risk=signals["discontinuity_risk"],
+            provenance_multiplier=signals["provenance_multiplier"],
+        ),
+        created_at=record.created_at,
+    )
