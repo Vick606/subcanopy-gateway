@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     debug: bool = False
     log_level: str = "INFO"
     database_url: str = "postgresql+psycopg://scg:scg@localhost:5432/scg"
-    embedding_model: str = "Qwen/Qwen3-Embedding-0.6B"
+    embedding_model: str = "hotchpotch/bekko-embedding-v1-a8m"
 
 
 def get_settings() -> Settings:
