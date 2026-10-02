@@ -7,7 +7,9 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.database import get_session
 from app.dependencies import get_scanner_service
 from app.schemas import (
     BatchScanRequest,
@@ -15,6 +17,7 @@ from app.schemas import (
     ScanRequest,
     ScanResponse,
 )
+from app.services.history import save_scan
 from app.services.scanner import ScannerService
 
 router = APIRouter(tags=["scan"])
@@ -24,13 +27,20 @@ router = APIRouter(tags=["scan"])
 async def scan(
     request: ScanRequest,
     service: Annotated[ScannerService, Depends(get_scanner_service)],
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ScanResponse:
-    return service.scan(request.text, source=request.source)
+    result = service.scan(request.text, source=request.source)
+    await save_scan(session, request.text, result)
+    return result
 
 
 @router.post("/scan/batch")
 async def scan_batch(
     request: BatchScanRequest,
     service: Annotated[ScannerService, Depends(get_scanner_service)],
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> BatchScanResponse:
-    return service.scan_batch(request.texts, source=request.source)
+    batch = service.scan_batch(request.texts, source=request.source)
+    for text, result in zip(request.texts, batch.results, strict=True):
+        await save_scan(session, text, result)
+    return batch
