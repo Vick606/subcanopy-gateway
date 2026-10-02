@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     version: str = "0.1.0"
     debug: bool = False
     log_level: str = "INFO"
+    database_url: str = "postgresql+psycopg://scg:scg@localhost:5432/scg"
 
 
 def get_settings() -> Settings:
