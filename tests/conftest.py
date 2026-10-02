@@ -117,7 +117,7 @@ def settings() -> Settings:
 
 @pytest.fixture
 def app(settings: Settings) -> FastAPI:
-    return create_app(settings=settings)
+    return create_app(settings=settings, with_embedding_model=False)
 
 
 @pytest.fixture

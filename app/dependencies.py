@@ -6,11 +6,25 @@
 
 from functools import lru_cache
 
+from fastapi import Request
 from subcanopy_guard import ContextScanner
 
+from app.services.embedding import EmbeddingService
 from app.services.scanner import ScannerService
 
 
 @lru_cache(maxsize=1)
 def get_scanner_service() -> ScannerService:
     return ScannerService(ContextScanner())
+
+
+def get_embedding_service(request: Request) -> EmbeddingService:
+    service: EmbeddingService | None = getattr(
+        request.app.state, "embedding_service", None
+    )
+    if service is None:
+        raise RuntimeError(
+            "Embedding service is not initialized. "
+            "The app must be created with with_embedding_model=True."
+        )
+    return service

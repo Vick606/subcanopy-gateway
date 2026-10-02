@@ -4,6 +4,7 @@
 # This file is part of subcanopy-gateway. See LICENSE and
 # COMMERCIAL_LICENSE.md at the repository root.
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -12,9 +13,14 @@ from app.config import Settings, get_settings
 from app.database import create_engine, create_session_factory
 from app.routers.history import router as history_router
 from app.routers.scan import router as scan_router
+from app.services.embedding import EmbeddingService, load_model
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    *,
+    with_embedding_model: bool = True,
+) -> FastAPI:
     settings = settings or get_settings()
 
     engine = create_engine(settings)
@@ -22,6 +28,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        if with_embedding_model:
+            model = await asyncio.to_thread(
+                load_model, settings.embedding_model
+            )
+            app.state.embedding_service = EmbeddingService(model)
         yield
         await engine.dispose()
 
