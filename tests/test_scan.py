@@ -9,9 +9,13 @@ from collections.abc import Iterator
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from httpx2 import AsyncClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from subcanopy_guard import ScanResult
 
 from app.dependencies import get_scanner_service
+from app.models.scan import ScanRecord
 from app.schemas import ScanResponse
 from app.services.scanner import ScannerService
 
@@ -168,3 +172,35 @@ def test_batch_scan_unknown_source_returns_422(client: TestClient) -> None:
     )
 
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_scan_persists_record(
+    db_client: AsyncClient,
+    override_scanner: _StubScanner,
+    db_session: AsyncSession,
+) -> None:
+    await db_client.post(
+        "/scan", json={"text": "persist me", "source": "tool_output"}
+    )
+
+    rows = (await db_session.execute(select(ScanRecord))).scalars().all()
+
+    assert len(rows) == 1
+    assert rows[0].text_preview == "persist me"
+    assert rows[0].source == "tool_output"
+    assert rows[0].severity == "HIGH"
+
+
+@pytest.mark.asyncio
+async def test_batch_scan_persists_one_row_per_item(
+    db_client: AsyncClient,
+    override_scanner: _StubScanner,
+    db_session: AsyncSession,
+) -> None:
+    await db_client.post("/scan/batch", json={"texts": ["first", "second"]})
+
+    rows = (await db_session.execute(select(ScanRecord))).scalars().all()
+
+    assert len(rows) == 2
+    assert {r.text_preview for r in rows} == {"first", "second"}
