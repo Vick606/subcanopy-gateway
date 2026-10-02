@@ -13,7 +13,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
-EMBEDDING_DIM = 1024
+EMBEDDING_DIM = 384
 
 
 class AttackPattern(Base):
