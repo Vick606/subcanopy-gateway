@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14.7"
 
 [[package]]
@@ -935,11 +935,11 @@ dev = [
 
 [[package]]
 name = "subcanopy-guard"
-version = "0.3.1"
+version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/48/2a/ca06033a572507f67599b53f3e44533c68877b43977d59c1a1ed9deb7e40/subcanopy_guard-0.3.1.tar.gz", hash = "sha256:597bbc0c2cb61c489050be0fddc28fd484f73c9ca706d802265c33d492839bc2", size = 17269, upload-time = "2026-09-26T06:52:41.438Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9d/0b/7c4815aae4c3fa91e9c869f75b52bbc3630ff140c8f20678c057eb8f1a62/subcanopy_guard-0.4.0.tar.gz", hash = "sha256:710789d1a741e72fa2dfdefce16b37a301ab9e54823f00d881cd890004291585", size = 20627, upload-time = "2026-09-29T10:35:53.605Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e8/f2/83908d054ff90e26b261ec026c79fb2989be6df21296a06c343392ad0042/subcanopy_guard-0.3.1-py3-none-any.whl", hash = "sha256:7695d0e7d9f479ae96c51792b703a2ca39b96bfb8b5cf11641fdd00715cf3bd6", size = 22944, upload-time = "2026-09-26T06:52:39.919Z" },
+    { url = "https://files.pythonhosted.org/packages/d3/1f/19a92bce9c978f620bd367e06fe5e9c468c5cb4eeedfc913bd000fdc0d41/subcanopy_guard-0.4.0-py3-none-any.whl", hash = "sha256:5416bd2036ce0cb3113d590dcd40fe317721e8d67fd254dc2822c13738da4b8f", size = 26540, upload-time = "2026-09-29T10:35:52.21Z" },
 ]
 
 [[package]]
