@@ -4,8 +4,10 @@
 # This file is part of subcanopy-gateway. See LICENSE and
 # COMMERCIAL_LICENSE.md at the repository root.
 
+from datetime import datetime
 from enum import StrEnum
 from typing import Annotated
+from uuid import UUID
 
 from pydantic import AfterValidator, BaseModel, Field, computed_field
 from subcanopy_guard.provenance import known_sources
@@ -63,3 +65,24 @@ class BatchScanResponse(BaseModel):
     @property
     def count(self) -> int:
         return len(self.results)
+
+
+class ScanRecordResponse(BaseModel):
+    id: UUID
+    text_hash: str
+    text_preview: str | None
+    source: str
+    severity: Severity
+    risk: float
+    blocking: bool
+    matches: list[str]
+    hotspots: list[tuple[int, int]]
+    signals: SignalBreakdown
+    created_at: datetime
+
+
+class ScanListResponse(BaseModel):
+    items: list[ScanRecordResponse]
+    total: int
+    limit: int
+    offset: int
