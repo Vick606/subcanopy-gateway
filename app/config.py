@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     database_url: str = "postgresql+psycopg://scg:scg@localhost:5432/scg"
     embedding_model: str = "hotchpotch/bekko-embedding-v1-a8m"
+    similarity_threshold: float = 0.5
 
 
 def get_settings() -> Settings:
