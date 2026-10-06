@@ -87,6 +87,8 @@ class ScanRecordResponse(BaseModel):
     matches: list[str]
     hotspots: list[tuple[int, int]]
     signals: SignalBreakdown
+    matched_pattern_id: UUID | None = None
+    match_distance: float | None = None
     created_at: datetime
 
 
