@@ -23,11 +23,28 @@ from sqlalchemy.ext.asyncio import (
 
 from app.config import Settings
 from app.database import get_session
+from app.dependencies import get_embedding_service
 from app.main import create_app
 
 TEST_DATABASE_URL = "postgresql+psycopg://scg:scg@localhost:5432/scg_test"
 TEST_DATABASE_SYNC_URL = "postgresql://scg:scg@localhost:5432/scg_test"
 TEST_ADMIN_URL = "postgresql://scg:scg@localhost:5432/postgres"
+
+_FIXED_VECTOR: list[float] = [1.0] + [0.0] * 383
+
+
+class _FixedEmbedder:
+    """Returns a fixed unit vector. Never loads a model.
+
+    The vector must be nonzero: cosine distance is undefined for a
+    zero vector, so a zero embedder can never match anything.
+    """
+
+    async def embed(self, text: str) -> list[float]:
+        return list(_FIXED_VECTOR)
+
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        return [list(_FIXED_VECTOR) for _ in texts]
 
 
 def _ensure_test_database() -> None:
@@ -120,6 +137,19 @@ def app(settings: Settings) -> FastAPI:
     return create_app(settings=settings, with_embedding_model=False)
 
 
+@pytest.fixture(autouse=True)
+def _stub_embedder(app: FastAPI) -> Iterator[None]:
+    """Replace the embedding service for every test.
+
+    with_embedding_model=False means the real model is not loaded, so
+    get_embedding_service would raise. This override returns a fake
+    that produces deterministic vectors.
+    """
+    app.dependency_overrides[get_embedding_service] = _FixedEmbedder
+    yield
+    app.dependency_overrides.pop(get_embedding_service, None)
+
+
 @pytest.fixture
 def client(app: FastAPI) -> Iterator[TestClient]:
     with TestClient(app) as c:
@@ -147,4 +177,4 @@ async def db_client(
         ) as ac:
             yield ac
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_session, None)
