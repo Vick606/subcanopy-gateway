@@ -44,6 +44,7 @@ def create_app(
     )
     app.state.engine = engine
     app.state.session_factory = session_factory
+    app.state.settings = settings
 
     @app.get("/health")
     async def health() -> dict[str, str]:
