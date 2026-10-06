@@ -9,6 +9,7 @@ from functools import lru_cache
 from fastapi import Request
 from subcanopy_guard import ContextScanner
 
+from app.config import Settings
 from app.services.embedding import EmbeddingService
 from app.services.scanner import ScannerService
 
@@ -28,3 +29,8 @@ def get_embedding_service(request: Request) -> EmbeddingService:
             "The app must be created with with_embedding_model=True."
         )
     return service
+
+
+def get_app_settings(request: Request) -> Settings:
+    settings: Settings = request.app.state.settings
+    return settings
