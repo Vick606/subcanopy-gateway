@@ -7,7 +7,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, String, Text, func
+from sqlalchemy import DateTime, Float, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -25,6 +25,11 @@ class ScanRecord(Base):
     risk: Mapped[float] = mapped_column(Float)
     blocking: Mapped[bool] = mapped_column(default=False)
     signals: Mapped[dict] = mapped_column(JSONB)
+    matched_pattern_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("attack_patterns.id", ondelete="SET NULL"),
+        index=True,
+    )
+    match_distance: Mapped[float | None] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
