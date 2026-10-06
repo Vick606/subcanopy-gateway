@@ -35,6 +35,7 @@ async def save_scan(
     response: ScanResponse,
 ) -> ScanRecord:
     """Persist a scan result and return the stored row."""
+    match = response.nearest_match
     record = ScanRecord(
         text_hash=hash_text(text),
         text_preview=preview_text(text),
@@ -49,6 +50,8 @@ async def save_scan(
             "matches": response.matches,
             "hotspots": response.hotspots,
         },
+        matched_pattern_id=match.id if match else None,
+        match_distance=match.distance if match else None,
     )
     session.add(record)
     await session.commit()
@@ -73,5 +76,7 @@ def record_to_response(record: ScanRecord) -> ScanRecordResponse:
             discontinuity_risk=signals["discontinuity_risk"],
             provenance_multiplier=signals["provenance_multiplier"],
         ),
+        matched_pattern_id=record.matched_pattern_id,
+        match_distance=record.match_distance,
         created_at=record.created_at,
     )
