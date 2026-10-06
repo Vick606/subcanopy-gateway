@@ -27,6 +27,19 @@ class EmbeddingService:
         )
         return vector.tolist()
 
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        """Encode multiple texts in one pass.
+
+        The underlying encoder batches internally, so N short texts
+        cost roughly the same wall time as one.
+        """
+        embeddings = await asyncio.to_thread(
+            self._model.encode,
+            texts,
+            normalize_embeddings=True,
+        )
+        return [e.tolist() for e in embeddings]
+
 
 def load_model(model_name: str) -> SentenceTransformer:
     """Load the model. Blocking. Call via asyncio.to_thread."""
