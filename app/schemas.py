@@ -43,6 +43,14 @@ class SignalBreakdown(BaseModel):
     provenance_multiplier: float
 
 
+class NearestMatch(BaseModel):
+    id: UUID
+    name: str
+    source_corpus: str
+    category: str
+    distance: float
+
+
 class ScanResponse(BaseModel):
     severity: Severity
     risk: float
@@ -51,6 +59,7 @@ class ScanResponse(BaseModel):
     matches: list[str]
     hotspots: list[tuple[int, int]]
     signals: SignalBreakdown
+    nearest_match: NearestMatch | None = None
 
 
 class BatchScanRequest(BaseModel):
