@@ -5,14 +5,21 @@
 # COMMERCIAL_LICENSE.md at the repository root.
 
 import hashlib
+import uuid
 
 import pytest
 from httpx2 import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.attack import AttackPattern
 from app.models.scan import ScanRecord
-from app.schemas import ScanResponse, Severity, SignalBreakdown
+from app.schemas import (
+    NearestMatch,
+    ScanResponse,
+    Severity,
+    SignalBreakdown,
+)
 from app.services.history import (
     hash_text,
     preview_text,
@@ -86,6 +93,49 @@ async def test_record_to_response_extracts_json_fields(
     assert response.hotspots == [(10, 25)]
     assert response.signals.density_risk == 0.62
     assert response.created_at == record.created_at
+
+
+@pytest.mark.asyncio
+async def test_save_scan_persists_match_when_present(
+    db_session: AsyncSession,
+) -> None:
+    pattern = AttackPattern(
+        id=uuid.uuid4(),
+        name="test-pattern",
+        text="pattern text",
+        source_corpus="test",
+        category="test",
+        embedding=[1.0] + [0.0] * 383,
+    )
+    db_session.add(pattern)
+    await db_session.flush()
+
+    response = _response().model_copy(
+        update={
+            "nearest_match": NearestMatch(
+                id=pattern.id,
+                name=pattern.name,
+                source_corpus=pattern.source_corpus,
+                category=pattern.category,
+                distance=0.12,
+            )
+        }
+    )
+
+    record = await save_scan(db_session, "some text", response)
+
+    assert record.matched_pattern_id == pattern.id
+    assert record.match_distance == 0.12
+
+
+@pytest.mark.asyncio
+async def test_save_scan_persists_null_match_when_absent(
+    db_session: AsyncSession,
+) -> None:
+    record = await save_scan(db_session, "some text", _response())
+
+    assert record.matched_pattern_id is None
+    assert record.match_distance is None
 
 
 async def _seed(
