@@ -4,21 +4,20 @@
 # This file is part of subcanopy-gateway. See LICENSE and
 # COMMERCIAL_LICENSE.md at the repository root.
 
-"""Rate limiting middleware.
+"""Request middleware: rate limiting and access logging.
 
-Sliding window, in-memory. Per API key (hashed) when the header is
-present, per client IP otherwise. Fails open: if the limiter itself
-raises, the request is allowed. Blocking traffic because of a limiter
-bug is worse than a brief rate limit bypass.
+Rate limiting is a custom sliding window, not slowapi. FastAPI 0.137
+changed include_router so app.routes no longer contains included
+routes, and slowapi silently skips them. A custom middleware wraps
+the ASGI app directly and does not depend on route introspection.
 
-slowapi is not used. FastAPI 0.137 changed include_router so that
-app.routes no longer contains included routes, and slowapi silently
-skips them. A custom middleware wraps the ASGI app directly and does
-not depend on route introspection.
+Logging is registered after rate limiting so it wraps the entire
+request lifecycle, including 429 responses.
 """
 
 import hashlib
 import hmac
+import logging
 import threading
 import time
 from collections import defaultdict
@@ -30,6 +29,8 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp
 
 EXEMPT_PATHS = frozenset({"/health", "/docs", "/openapi.json", "/redoc"})
+
+access_logger = logging.getLogger("subcanopy_gateway.access")
 
 
 class SlidingWindowLimiter:
@@ -113,4 +114,62 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         for name, value in headers.items():
             response.headers[name] = value
+        return response
+
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    """One access log line per request.
+
+    Logs method, path, status, duration, and an 8-character prefix of
+    the hashed API key. The raw key is never logged.
+    """
+
+    def __init__(self, app: ASGIApp, *, pepper: bytes) -> None:
+        super().__init__(app)
+        self._pepper = pepper
+
+    def _key_prefix(self, request: Request) -> str:
+        raw = request.headers.get("X-API-Key")
+        if not raw:
+            return "-"
+        digest = hmac.new(
+            self._pepper, raw.encode(), hashlib.sha256
+        ).hexdigest()
+        return digest[:8]
+
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
+        start = time.perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            duration_ms = (time.perf_counter() - start) * 1000
+            access_logger.exception(
+                "%s %s 500 %.1fms key=%s",
+                request.method,
+                request.url.path,
+                duration_ms,
+                self._key_prefix(request),
+            )
+            raise
+
+        duration_ms = (time.perf_counter() - start) * 1000
+        if response.status_code >= 500:
+            level = access_logger.error
+        elif response.status_code >= 400:
+            level = access_logger.warning
+        else:
+            level = access_logger.info
+
+        level(
+            "%s %s %d %.1fms key=%s",
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_ms,
+            self._key_prefix(request),
+        )
         return response
