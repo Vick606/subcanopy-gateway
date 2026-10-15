@@ -5,6 +5,7 @@
 # COMMERCIAL_LICENSE.md at the repository root.
 
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -12,10 +13,12 @@ from fastapi import Depends, FastAPI
 from app.config import Settings, get_settings
 from app.database import create_engine, create_session_factory
 from app.dependencies import require_api_key
-from app.middleware import RateLimitMiddleware
+from app.middleware import RateLimitMiddleware, RequestLoggingMiddleware
 from app.routers.history import router as history_router
 from app.routers.scan import router as scan_router
 from app.services.embedding import EmbeddingService, load_model
+
+logging.getLogger("subcanopy_gateway").setLevel(logging.INFO)
 
 
 def create_app(
@@ -24,6 +27,10 @@ def create_app(
     with_embedding_model: bool = True,
 ) -> FastAPI:
     settings = settings or get_settings()
+
+    logging.getLogger("subcanopy_gateway").setLevel(
+        settings.log_level.upper()
+    )
 
     engine = create_engine(settings)
     session_factory = create_session_factory(engine)
@@ -48,11 +55,16 @@ def create_app(
     app.state.session_factory = session_factory
     app.state.settings = settings
 
+    pepper = settings.api_key_pepper.encode()
+
+    # Middleware order: the last added is the outermost. Logging wraps
+    # rate limiting so 429 responses still produce a log line.
     app.add_middleware(
         RateLimitMiddleware,
         limit=settings.rate_limit_per_minute,
-        pepper=settings.api_key_pepper.encode(),
+        pepper=pepper,
     )
+    app.add_middleware(RequestLoggingMiddleware, pepper=pepper)
 
     @app.get("/health")
     async def health() -> dict[str, str]:
