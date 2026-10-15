@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://scg:scg@localhost:5432/scg"
     embedding_model: str = "hotchpotch/bekko-embedding-v1-a8m"
     similarity_threshold: float = 0.5
+    api_key_pepper: str = "dev-pepper-change-in-production"
 
 
 def get_settings() -> Settings:
