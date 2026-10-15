@@ -4,7 +4,8 @@
 # This file is part of subcanopy-gateway. See LICENSE and
 # COMMERCIAL_LICENSE.md at the repository root.
 
+from app.models.api_key import APIKey
 from app.models.attack import AttackPattern
 from app.models.scan import ScanRecord
 
-__all__ = ["AttackPattern", "ScanRecord"]
+__all__ = ["APIKey", "AttackPattern", "ScanRecord"]
