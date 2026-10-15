@@ -12,6 +12,7 @@ from fastapi import Depends, FastAPI
 from app.config import Settings, get_settings
 from app.database import create_engine, create_session_factory
 from app.dependencies import require_api_key
+from app.middleware import RateLimitMiddleware
 from app.routers.history import router as history_router
 from app.routers.scan import router as scan_router
 from app.services.embedding import EmbeddingService, load_model
@@ -46,6 +47,12 @@ def create_app(
     app.state.engine = engine
     app.state.session_factory = session_factory
     app.state.settings = settings
+
+    app.add_middleware(
+        RateLimitMiddleware,
+        limit=settings.rate_limit_per_minute,
+        pepper=settings.api_key_pepper.encode(),
+    )
 
     @app.get("/health")
     async def health() -> dict[str, str]:
