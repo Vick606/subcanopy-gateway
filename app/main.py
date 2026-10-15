@@ -7,10 +7,11 @@
 import asyncio
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from app.config import Settings, get_settings
 from app.database import create_engine, create_session_factory
+from app.dependencies import require_api_key
 from app.routers.history import router as history_router
 from app.routers.scan import router as scan_router
 from app.services.embedding import EmbeddingService, load_model
@@ -50,7 +51,7 @@ def create_app(
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    @app.get("/version")
+    @app.get("/version", dependencies=[Depends(require_api_key)])
     async def version() -> dict[str, str]:
         return {"app": settings.app_name, "version": settings.version}
 
