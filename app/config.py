@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     embedding_model: str = "hotchpotch/bekko-embedding-v1-a8m"
     similarity_threshold: float = 0.5
     api_key_pepper: str = "dev-pepper-change-in-production"
+    rate_limit_per_minute: int = 60
 
 
 def get_settings() -> Settings:
