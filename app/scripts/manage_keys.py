@@ -29,8 +29,16 @@ from app.security import generate_api_key, hash_api_key
 
 cli = typer.Typer(
     help="Manage API keys for the gateway.",
-    no_args_is_help=True,
+    invoke_without_command=True,
 )
+
+
+@cli.callback()
+def _root(ctx: typer.Context) -> None:
+    """Show help when no command is given."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit(code=0)
 
 
 async def _create(name: str) -> None:
@@ -105,7 +113,7 @@ async def _set_active(key_id: str, active: bool) -> None:
     except ValueError:
         typer.echo(f"Invalid key id: {key_id}", err=True)
         await engine.dispose()
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from None
 
     async with session_factory() as session:
         record = await session.get(APIKey, uid)
