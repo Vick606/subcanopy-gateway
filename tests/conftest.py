@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import (
 
 from app.config import Settings
 from app.database import get_session
-from app.dependencies import get_embedding_service
+from app.dependencies import get_embedding_service, require_api_key
 from app.main import create_app
 
 TEST_DATABASE_URL = "postgresql+psycopg://scg:scg@localhost:5432/scg_test"
@@ -129,6 +129,7 @@ def settings() -> Settings:
         debug=True,
         log_level="DEBUG",
         database_url=TEST_DATABASE_URL,
+        api_key_pepper="test-pepper-at-least-32-bytes-long!",
     )
 
 
@@ -148,6 +149,19 @@ def _stub_embedder(app: FastAPI) -> Iterator[None]:
     app.dependency_overrides[get_embedding_service] = _FixedEmbedder
     yield
     app.dependency_overrides.pop(get_embedding_service, None)
+
+
+@pytest.fixture(autouse=True)
+def _stub_api_key(app: FastAPI) -> Iterator[None]:
+    """Bypass auth for every test except those in test_auth.py.
+
+    Tests that need to exercise auth explicitly remove this override.
+    Uses pop, not clear, so it does not wipe other overrides on the
+    same app instance.
+    """
+    app.dependency_overrides[require_api_key] = lambda: None
+    yield
+    app.dependency_overrides.pop(require_api_key, None)
 
 
 @pytest.fixture
