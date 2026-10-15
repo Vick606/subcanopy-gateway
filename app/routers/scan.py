@@ -15,6 +15,7 @@ from app.dependencies import (
     get_app_settings,
     get_embedding_service,
     get_scanner_service,
+    require_api_key,
 )
 from app.schemas import (
     BatchScanRequest,
@@ -27,7 +28,7 @@ from app.services.history import save_scan
 from app.services.scanner import ScannerService
 from app.services.similarity import find_nearest
 
-router = APIRouter(tags=["scan"])
+router = APIRouter(tags=["scan"], dependencies=[Depends(require_api_key)])
 
 
 @router.post("/scan")
