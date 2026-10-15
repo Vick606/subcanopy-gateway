@@ -12,11 +12,16 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
+from app.dependencies import require_api_key
 from app.models.scan import ScanRecord
 from app.schemas import ScanListResponse, ScanRecordResponse, Severity
 from app.services.history import record_to_response
 
-router = APIRouter(prefix="/scans", tags=["history"])
+router = APIRouter(
+    prefix="/scans",
+    tags=["history"],
+    dependencies=[Depends(require_api_key)],
+)
 
 
 @router.get("")
